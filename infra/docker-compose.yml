@@ -1,0 +1,41 @@
+services:
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:latest
+    container_name: n8n
+    restart: unless-stopped
+    ports:
+      - "5678:5678"
+    environment:
+      # --- Identidad / URL ---
+      - N8N_HOST=localhost
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      # WEBHOOK_URL: la base que n8n usa para construir las URLs de webhook.
+      # En emulador/web vale localhost. Para móvil físico cámbialo por la IP
+      # de tu PC en la LAN (p.ej. http://192.168.1.50:5678/) o por tu túnel/VPS.
+      - WEBHOOK_URL=http://localhost:5678/
+
+      # --- Zona horaria ---
+      - GENERIC_TIMEZONE=Europe/Madrid
+      - TZ=Europe/Madrid
+
+      # --- Seguridad básica del editor (login al panel de n8n) ---
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_BASIC_AUTH_USER=${N8N_BASIC_AUTH_USER}
+      - N8N_BASIC_AUTH_PASSWORD=${N8N_BASIC_AUTH_PASSWORD}
+
+      # --- Clave de cifrado de credenciales (FÍJALA y no la cambies luego) ---
+      - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY}
+
+      # Silencia el aviso de permisos del archivo de config
+      - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
+
+    volumes:
+      - n8n_data:/home/node/.n8n
+    extra_hosts:
+      # Permite que n8n llegue a servicios que corren en tu host (Dify, etc.)
+      # con host.docker.internal, como ya usaste en Aurora.
+      - "host.docker.internal:host-gateway"
+
+volumes:
+  n8n_data:

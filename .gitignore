@@ -1,0 +1,18 @@
+# Secretos — nunca al repo
+app/env.json
+infra/.env
+
+# Flutter
+app/.dart_tool/
+app/build/
+app/.flutter-plugins
+app/.flutter-plugins-dependencies
+app/.idea/
+*.iml
+
+# n8n (datos locales, si se montaran como carpeta)
+infra/n8n_data/
+
+# Sistema
+.DS_Store
+Thumbs.db
