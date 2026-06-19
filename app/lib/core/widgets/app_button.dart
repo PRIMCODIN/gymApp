@@ -62,9 +62,9 @@ class AppButton extends StatelessWidget {
           disabledForegroundColor: foreground.withValues(alpha: 0.7),
           elevation: 0,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppSpacing.m),
+            borderRadius: BorderRadius.circular(AppRadius.input),
           ),
-          textStyle: textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+          textStyle: textTheme.labelLarge,
         ),
         child: isLoading
             ? SizedBox(

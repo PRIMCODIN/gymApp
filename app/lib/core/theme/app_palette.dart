@@ -19,6 +19,7 @@ class AppPalette extends ThemeExtension<AppPalette> {
     required this.surfaceElevated,
     required this.divider,
     required this.textSecondary,
+    required this.textTertiary,
   });
 
   /// Paleta del modo oscuro (única por ahora; el sistema es dark-only).
@@ -30,6 +31,7 @@ class AppPalette extends ThemeExtension<AppPalette> {
     surfaceElevated: AppColors.surfaceElevated,
     divider: AppColors.divider,
     textSecondary: AppColors.textSecondary,
+    textTertiary: AppColors.textTertiary,
   );
 
   final Color accentTraining;
@@ -39,6 +41,7 @@ class AppPalette extends ThemeExtension<AppPalette> {
   final Color surfaceElevated;
   final Color divider;
   final Color textSecondary;
+  final Color textTertiary;
 
   @override
   AppPalette copyWith({
@@ -49,6 +52,7 @@ class AppPalette extends ThemeExtension<AppPalette> {
     Color? surfaceElevated,
     Color? divider,
     Color? textSecondary,
+    Color? textTertiary,
   }) {
     return AppPalette(
       accentTraining: accentTraining ?? this.accentTraining,
@@ -58,6 +62,7 @@ class AppPalette extends ThemeExtension<AppPalette> {
       surfaceElevated: surfaceElevated ?? this.surfaceElevated,
       divider: divider ?? this.divider,
       textSecondary: textSecondary ?? this.textSecondary,
+      textTertiary: textTertiary ?? this.textTertiary,
     );
   }
 
@@ -74,6 +79,7 @@ class AppPalette extends ThemeExtension<AppPalette> {
       surfaceElevated: Color.lerp(surfaceElevated, other.surfaceElevated, t)!,
       divider: Color.lerp(divider, other.divider, t)!,
       textSecondary: Color.lerp(textSecondary, other.textSecondary, t)!,
+      textTertiary: Color.lerp(textTertiary, other.textTertiary, t)!,
     );
   }
 }

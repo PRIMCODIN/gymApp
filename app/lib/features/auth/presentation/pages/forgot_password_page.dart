@@ -5,14 +5,14 @@ import '../../../../core/errors/auth_failure.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/validation/validators.dart';
 import '../../../../core/widgets/app_button.dart';
-import '../../../../core/widgets/app_card.dart';
 import '../../../../core/widgets/app_text_field.dart';
 import '../state/password_reset_controller.dart';
+import '../widgets/auth_back_button.dart';
+import '../widgets/auth_footer_prompt.dart';
 
-/// Pantalla de recuperación de contraseña. Envía el email de reset vía Supabase.
-///
-/// Pantalla funcional mínima (sin pulir). Maneja los tres estados del envío:
-/// enviando / enviado / error.
+/// Pantalla de recuperación de contraseña. Estilada según el design system y el
+/// mockup. Envía el email de reset vía Supabase; maneja los tres estados del
+/// envío (enviando / enviado / error). La lógica no se toca.
 class ForgotPasswordPage extends ConsumerStatefulWidget {
   const ForgotPasswordPage({super.key});
 
@@ -51,65 +51,71 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
     final textTheme = theme.textTheme;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Recuperar contraseña')),
       body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(AppSpacing.l),
-            child: AppCard(
-              padding: const EdgeInsets.all(AppSpacing.l),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    'Introduce tu email y te enviaremos instrucciones para '
-                    'restablecer tu contraseña.',
-                    style: textTheme.bodyMedium,
-                  ),
-                  const SizedBox(height: AppSpacing.l),
-                  AppTextField(
-                    controller: _emailController,
-                    label: 'Email',
-                    errorText: _emailError,
-                    keyboardType: TextInputType.emailAddress,
-                    autocorrect: false,
-                    enabled: !isLoading && !isSent,
-                  ),
-                  if (isSent) ...[
-                    const SizedBox(height: AppSpacing.m),
-                    Text(
-                      'Si ese email tiene una cuenta, te hemos enviado las '
-                      'instrucciones. Revisa tu bandeja de entrada.',
-                      textAlign: TextAlign.center,
-                      style: textTheme.bodyMedium,
-                    ),
-                  ],
-                  if (errorMessage != null) ...[
-                    const SizedBox(height: AppSpacing.m),
-                    Text(
-                      errorMessage,
-                      textAlign: TextAlign.center,
-                      style: textTheme.labelSmall?.copyWith(
-                        color: theme.colorScheme.error,
-                      ),
-                    ),
-                  ],
-                  const SizedBox(height: AppSpacing.l),
-                  if (isSent)
-                    AppButton(
-                      label: 'Volver',
-                      onPressed: () => Navigator.of(context).pop(),
-                    )
-                  else
-                    AppButton(
-                      label: 'Enviar email',
-                      onPressed: _submit,
-                      isLoading: isLoading,
-                    ),
-                ],
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(AppSpacing.l),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const AuthBackButton(),
+              const SizedBox(height: AppSpacing.m),
+              Text('Recuperar contraseña', style: textTheme.headlineMedium),
+              const SizedBox(height: AppSpacing.xs),
+              Text(
+                'Introduce tu correo y te enviaremos un enlace para '
+                'restablecerla.',
+                style: textTheme.bodySmall,
               ),
-            ),
+              const SizedBox(height: AppSpacing.xl),
+              AppTextField(
+                controller: _emailController,
+                label: 'Correo electrónico',
+                prefixIcon: Icons.mail_outline,
+                errorText: _emailError,
+                keyboardType: TextInputType.emailAddress,
+                autocorrect: false,
+                enabled: !isLoading && !isSent,
+                textInputAction: TextInputAction.done,
+                onSubmitted: (_) => _submit(),
+              ),
+              if (isSent) ...[
+                const SizedBox(height: AppSpacing.m),
+                Text(
+                  'Si ese correo tiene una cuenta, te hemos enviado las '
+                  'instrucciones. Revisa tu bandeja de entrada.',
+                  textAlign: TextAlign.center,
+                  style: textTheme.bodySmall,
+                ),
+              ],
+              if (errorMessage != null) ...[
+                const SizedBox(height: AppSpacing.m),
+                Text(
+                  errorMessage,
+                  textAlign: TextAlign.center,
+                  style: textTheme.labelMedium?.copyWith(
+                    color: theme.colorScheme.error,
+                  ),
+                ),
+              ],
+              const SizedBox(height: AppSpacing.l),
+              if (isSent)
+                AppButton(
+                  label: 'Volver',
+                  onPressed: () => Navigator.of(context).pop(),
+                )
+              else
+                AppButton(
+                  label: 'Continuar',
+                  onPressed: _submit,
+                  isLoading: isLoading,
+                ),
+              const SizedBox(height: AppSpacing.m),
+              AuthFooterPrompt(
+                question: '¿Recordaste tu contraseña?',
+                action: 'Inicia sesión',
+                onPressed: isLoading ? null : () => Navigator.of(context).pop(),
+              ),
+            ],
           ),
         ),
       ),

@@ -37,4 +37,11 @@ abstract final class AppColors {
 
   /// Texto secundario / etiquetas.
   static const Color textSecondary = Color(0xFF9CA3AF);
+
+  /// Texto terciario / placeholders (más tenue que [textSecondary]).
+  ///
+  /// No está en la tabla de `specs/design-system.md`; se añade como token a
+  /// partir del mockup, que usa un gris más apagado para los placeholders de los
+  /// inputs. La spec permite ajustar/añadir tokens (los hex son punto de partida).
+  static const Color textTertiary = Color(0xFF6B7280);
 }

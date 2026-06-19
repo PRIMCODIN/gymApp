@@ -2,14 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/theme/app_spacing.dart';
+import '../../../shell/presentation/pages/main_shell.dart';
 import '../state/auth_providers.dart';
 import 'login_page.dart';
-import 'login_success_page.dart';
 
 /// Widget raíz que decide qué pantalla mostrar según el estado de sesión.
 ///
 /// Observa `authStateProvider` (stream sobre `onAuthStateChange`): el cambio
-/// entre Login y "Login Successful" es 100% reactivo, sin navegación manual.
+/// entre Login y el shell principal es 100% reactivo, sin navegación manual.
 class AuthGate extends ConsumerWidget {
   const AuthGate({super.key});
 
@@ -19,7 +19,7 @@ class AuthGate extends ConsumerWidget {
 
     return authState.when(
       data: (user) =>
-          user == null ? const LoginPage() : LoginSuccessPage(user: user),
+          user == null ? const LoginPage() : const MainShell(),
       loading: () => const Scaffold(
         body: Center(child: CircularProgressIndicator()),
       ),

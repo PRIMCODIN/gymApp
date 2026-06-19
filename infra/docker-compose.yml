@@ -29,6 +29,9 @@ services:
 
       # Silencia el aviso de permisos del archivo de config
       - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
+      #Permite que n8n sea accedido desde cualquier origen (útil para desarrollo, no recomendado para producción)
+      - N8N_CORS_ALLOW_ORIGIN=*
+      - N8N_CORS_ALLOW_CREDENTIALS=true
 
     volumes:
       - n8n_data:/home/node/.n8n

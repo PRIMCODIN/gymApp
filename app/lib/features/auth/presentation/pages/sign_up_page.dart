@@ -6,70 +6,87 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/validation/validators.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_text_field.dart';
+import '../../../../core/widgets/password_strength_bar.dart';
 import '../state/login_controller.dart';
 import '../widgets/auth_back_button.dart';
 import '../widgets/auth_divider.dart';
 import '../widgets/auth_footer_prompt.dart';
 import '../widgets/auth_social_row.dart';
-import 'forgot_password_page.dart';
-import 'sign_up_page.dart';
 
-/// Pantalla de inicio de sesión. Estilada según el design system y el mockup.
+/// Pantalla de registro. Estilada según el design system y el mockup.
 ///
-/// Solo gestiona el login; el registro y la recuperación viven en pantallas
-/// aparte a las que se navega desde aquí. La lógica de auth no se toca: valida
-/// con `Validators` y delega en `LoginController.signIn`.
-class LoginPage extends ConsumerStatefulWidget {
-  const LoginPage({super.key});
+/// Comparte `LoginController` con la pantalla de login (expone `signUp`); la
+/// lógica de validación y de registro no se toca. Tras un registro correcto que
+/// requiere confirmación de email, muestra el aviso correspondiente.
+class SignUpPage extends ConsumerStatefulWidget {
+  const SignUpPage({super.key});
 
   @override
-  ConsumerState<LoginPage> createState() => _LoginPageState();
+  ConsumerState<SignUpPage> createState() => _SignUpPageState();
 }
 
-class _LoginPageState extends ConsumerState<LoginPage> {
+class _SignUpPageState extends ConsumerState<SignUpPage> {
+  final _nameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _confirmController = TextEditingController();
 
+  String? _nameError;
   String? _emailError;
   String? _passwordError;
+  String? _confirmError;
+
+  @override
+  void initState() {
+    super.initState();
+    // Redibuja la barra de fuerza al escribir la contraseña.
+    _passwordController.addListener(_onPasswordChanged);
+  }
 
   @override
   void dispose() {
+    _passwordController.removeListener(_onPasswordChanged);
+    _nameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
+    _confirmController.dispose();
     super.dispose();
   }
 
+  void _onPasswordChanged() => setState(() {});
+
   bool _validate() {
+    final nameError = Validators.name(_nameController.text);
     final emailError = Validators.email(_emailController.text);
     final passwordError = Validators.password(_passwordController.text);
+    final confirmError = Validators.confirmPassword(
+      _confirmController.text,
+      _passwordController.text,
+    );
     setState(() {
+      _nameError = nameError;
       _emailError = emailError;
       _passwordError = passwordError;
+      _confirmError = confirmError;
     });
-    return emailError == null && passwordError == null;
+    return nameError == null &&
+        emailError == null &&
+        passwordError == null &&
+        confirmError == null;
   }
 
   void _submit() {
     if (!_validate()) return;
-    ref.read(loginControllerProvider.notifier).signIn(
+    ref.read(loginControllerProvider.notifier).signUp(
           email: _emailController.text,
           password: _passwordController.text,
+          name: _nameController.text,
         );
   }
 
-  void _goToRegister() {
-    // Limpia cualquier error previo para no arrastrarlo entre pantallas.
+  void _goToLogin() {
     ref.invalidate(loginControllerProvider);
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => const SignUpPage()),
-    );
-  }
-
-  void _goToForgotPassword() {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => const ForgotPasswordPage()),
-    );
+    Navigator.of(context).pop();
   }
 
   @override
@@ -78,6 +95,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     final isLoading = state.isLoading;
     final errorMessage =
         state.hasError ? (state.error as AuthFailure).message : null;
+    final needsConfirmation =
+        state.asData?.value == AuthFormStatus.emailConfirmationRequired;
 
     final theme = Theme.of(context);
     final textTheme = theme.textTheme;
@@ -91,13 +110,22 @@ class _LoginPageState extends ConsumerState<LoginPage> {
             children: [
               const AuthBackButton(),
               const SizedBox(height: AppSpacing.m),
-              Text('Iniciar sesión', style: textTheme.headlineMedium),
+              Text('Crear cuenta', style: textTheme.headlineMedium),
               const SizedBox(height: AppSpacing.xs),
               Text(
-                'Accede con tu correo y contraseña para continuar.',
+                'Regístrate para empezar a seguir tu progreso.',
                 style: textTheme.bodySmall,
               ),
               const SizedBox(height: AppSpacing.xl),
+              AppTextField(
+                controller: _nameController,
+                label: 'Nombre',
+                prefixIcon: Icons.person_outline,
+                errorText: _nameError,
+                enabled: !isLoading,
+                textInputAction: TextInputAction.next,
+              ),
+              const SizedBox(height: AppSpacing.m),
               AppTextField(
                 controller: _emailController,
                 label: 'Correo electrónico',
@@ -116,19 +144,31 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 errorText: _passwordError,
                 isPassword: true,
                 enabled: !isLoading,
+                textInputAction: TextInputAction.next,
+              ),
+              PasswordStrengthBar(password: _passwordController.text),
+              const SizedBox(height: AppSpacing.m),
+              AppTextField(
+                controller: _confirmController,
+                label: 'Confirmar',
+                prefixIcon: Icons.lock_outline,
+                errorText: _confirmError,
+                isPassword: true,
+                enabled: !isLoading,
                 textInputAction: TextInputAction.done,
                 onSubmitted: (_) => _submit(),
               ),
-              const SizedBox(height: AppSpacing.s),
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton(
-                  onPressed: isLoading ? null : _goToForgotPassword,
-                  child: const Text('¿Olvidaste?'),
+              if (needsConfirmation) ...[
+                const SizedBox(height: AppSpacing.m),
+                Text(
+                  'Te hemos enviado un email de confirmación. Revísalo para '
+                  'activar tu cuenta antes de iniciar sesión.',
+                  textAlign: TextAlign.center,
+                  style: textTheme.bodySmall,
                 ),
-              ),
+              ],
               if (errorMessage != null) ...[
-                const SizedBox(height: AppSpacing.s),
+                const SizedBox(height: AppSpacing.m),
                 Text(
                   errorMessage,
                   textAlign: TextAlign.center,
@@ -139,15 +179,15 @@ class _LoginPageState extends ConsumerState<LoginPage> {
               ],
               const SizedBox(height: AppSpacing.l),
               AppButton(
-                label: 'Entrar',
+                label: 'Crear cuenta',
                 onPressed: _submit,
                 isLoading: isLoading,
               ),
               const SizedBox(height: AppSpacing.m),
               AuthFooterPrompt(
-                question: '¿No tienes cuenta?',
-                action: 'Regístrate',
-                onPressed: isLoading ? null : _goToRegister,
+                question: '¿Ya tienes cuenta?',
+                action: 'Inicia sesión',
+                onPressed: isLoading ? null : _goToLogin,
               ),
               const SizedBox(height: AppSpacing.l),
               const AuthDivider(),

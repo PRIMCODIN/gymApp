@@ -59,37 +59,51 @@ abstract final class AppTheme {
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: AppColors.surfaceElevated,
+        isDense: true,
         contentPadding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.m,
-          vertical: AppSpacing.m,
+          vertical: AppSpacing.s + AppSpacing.xs,
         ),
-        labelStyle: textTheme.bodyMedium?.copyWith(
+        labelStyle: textTheme.bodySmall?.copyWith(
           color: AppColors.textSecondary,
         ),
         floatingLabelStyle: textTheme.labelSmall?.copyWith(
           color: AppColors.textSecondary,
         ),
-        hintStyle: textTheme.bodyMedium?.copyWith(
-          color: AppColors.textSecondary,
+        hintStyle: textTheme.bodySmall?.copyWith(
+          color: AppColors.textTertiary,
         ),
-        errorStyle: textTheme.labelSmall?.copyWith(color: colorScheme.error),
-        // Sin líneas duras: el contraste lo da el escalón de gris del relleno.
-        border: _inputBorder(Colors.transparent),
-        enabledBorder: _inputBorder(Colors.transparent),
-        focusedBorder: _inputBorder(AppColors.accentTraining),
-        errorBorder: _inputBorder(colorScheme.error),
-        focusedErrorBorder: _inputBorder(colorScheme.error),
+        prefixIconColor: AppColors.textSecondary,
+        suffixIconColor: AppColors.textSecondary,
+        errorStyle: textTheme.labelMedium?.copyWith(color: colorScheme.error),
+        // Borde sutil de 0.5px en gris `divider`; foco en teal. Sin líneas duras.
+        border: _inputBorder(AppColors.divider, 0.5),
+        enabledBorder: _inputBorder(AppColors.divider, 0.5),
+        focusedBorder: _inputBorder(AppColors.accentTraining, 1),
+        errorBorder: _inputBorder(colorScheme.error, 0.5),
+        focusedErrorBorder: _inputBorder(colorScheme.error, 1),
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          foregroundColor: AppColors.accentTraining,
+          textStyle: textTheme.labelMedium?.copyWith(
+            color: AppColors.accentTraining,
+          ),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.xs,
+            vertical: AppSpacing.xs,
+          ),
+          minimumSize: Size.zero,
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        ),
       ),
     );
   }
 
-  static OutlineInputBorder _inputBorder(Color color) {
+  static OutlineInputBorder _inputBorder(Color color, double width) {
     return OutlineInputBorder(
-      borderRadius: BorderRadius.circular(AppRadius.card),
-      borderSide: BorderSide(
-        color: color,
-        width: color == Colors.transparent ? 0 : 1.5,
-      ),
+      borderRadius: BorderRadius.circular(AppRadius.input),
+      borderSide: BorderSide(color: color, width: width),
     );
   }
 }

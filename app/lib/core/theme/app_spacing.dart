@@ -12,6 +12,9 @@ abstract final class AppSpacing {
 
 /// Tokens de forma (radios de esquina).
 abstract final class AppRadius {
-  /// Radio generoso para tarjetas e inputs.
+  /// Radio generoso para tarjetas (`specs/design-system.md`, ~16px).
   static const double card = 16;
+
+  /// Radio para inputs, botones y controles pequeños (12px, según el mockup).
+  static const double input = 12;
 }
