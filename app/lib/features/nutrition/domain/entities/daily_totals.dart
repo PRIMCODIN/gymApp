@@ -1,4 +1,4 @@
-import 'food_log.dart';
+import 'food_log_entry.dart';
 
 /// Totales nutricionales del día: suma de kcal y macros de una lista de comidas.
 ///
@@ -18,7 +18,7 @@ class DailyTotals {
       DailyTotals(kcal: 0, proteina: 0, carbos: 0, grasa: 0);
 
   /// Suma los valores nutricionales de todas las comidas de [logs].
-  factory DailyTotals.fromLogs(List<FoodLog> logs) {
+  factory DailyTotals.fromLogs(List<FoodLogEntry> logs) {
     var kcal = 0.0;
     var proteina = 0.0;
     var carbos = 0.0;

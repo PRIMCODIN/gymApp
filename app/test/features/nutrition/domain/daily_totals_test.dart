@@ -1,15 +1,17 @@
 import 'package:app/features/nutrition/domain/entities/daily_totals.dart';
-import 'package:app/features/nutrition/domain/entities/food_log.dart';
+import 'package:app/features/nutrition/domain/entities/food_log_entry.dart';
 import 'package:app/features/nutrition/domain/entities/nutrition_estimate.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-FoodLog _log({
+FoodLogEntry _log({
   required double kcal,
   required double proteina,
   required double carbos,
   required double grasa,
 }) {
-  return FoodLog(
+  return FoodLogEntry(
+    id: 1,
+    fecha: DateTime(2026, 6, 19),
     descripcion: 'comida',
     nutrition: NutritionEstimate(
       kcal: kcal,

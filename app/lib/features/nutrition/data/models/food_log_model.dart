@@ -14,10 +14,10 @@ class FoodLogModel extends FoodLog {
     return FoodLogModel(
       descripcion: (row['descripcion'] as String?) ?? '',
       nutrition: NutritionEstimate(
-        kcal: _readNumber(row['kcal']),
-        proteina: _readNumber(row['proteina']),
-        carbos: _readNumber(row['carbos']),
-        grasa: _readNumber(row['grasa']),
+        kcal: readNumber(row['kcal']),
+        proteina: readNumber(row['proteina']),
+        carbos: readNumber(row['carbos']),
+        grasa: readNumber(row['grasa']),
       ),
     );
   }
@@ -36,9 +36,22 @@ class FoodLogModel extends FoodLog {
     };
   }
 
+  /// Mapa para actualizar una fila existente de `food_logs`. Solo las columnas
+  /// editables por el usuario; `user_id`, `fecha` y `created_at` no se tocan.
+  Map<String, dynamic> toUpdate() {
+    return {
+      'descripcion': descripcion,
+      'kcal': nutrition.kcal.round(),
+      'proteina': nutrition.proteina,
+      'carbos': nutrition.carbos,
+      'grasa': nutrition.grasa,
+    };
+  }
+
   /// Lee un valor numérico de la BD (`integer`/`numeric`) tolerando null y
-  /// representaciones como `String`. Un dato ausente cuenta como 0.
-  static double _readNumber(Object? value) {
+  /// representaciones como `String`. Un dato ausente cuenta como 0. Público para
+  /// reutilizarlo en otros DTO de lectura (p. ej. [FoodLogEntryModel]).
+  static double readNumber(Object? value) {
     if (value == null) return 0;
     if (value is num) return value.toDouble();
     if (value is String) return double.tryParse(value.replaceAll(',', '.')) ?? 0;
