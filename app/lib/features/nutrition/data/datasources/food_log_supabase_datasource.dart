@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../models/food_log_entry_model.dart';
 import '../models/food_log_model.dart';
 import '../nutrition_failure.dart';
 
@@ -27,12 +28,12 @@ class FoodLogSupabaseDataSource {
     }
   }
 
-  /// Lee las comidas de HOY del usuario en sesión, más reciente primero.
+  /// Lee las comidas del día [date] del usuario en sesión, más reciente primero.
   ///
-  /// "Hoy" se filtra por `fecha` = fecha local actual (`YYYY-MM-DD`). El RLS
-  /// limita la consulta a las filas del propio usuario; el `eq('user_id', ...)`
-  /// es explícito por claridad.
-  Future<List<FoodLogModel>> fetchToday() async {
+  /// Se filtra por `fecha` = fecha LOCAL de [date] (`YYYY-MM-DD`). El RLS limita
+  /// la consulta a las filas del propio usuario; el `eq('user_id', ...)` es
+  /// explícito por claridad.
+  Future<List<FoodLogEntryModel>> fetchByDate(DateTime date) async {
     final userId = _client.auth.currentUser?.id;
     if (userId == null) {
       throw const NutritionFailure(
@@ -45,20 +46,62 @@ class FoodLogSupabaseDataSource {
           .from('food_logs')
           .select()
           .eq('user_id', userId)
-          .eq('fecha', _today())
+          .eq('fecha', _formatDate(date))
           .order('created_at', ascending: false);
-      return rows.map(FoodLogModel.fromRow).toList();
+      return rows.map(FoodLogEntryModel.fromRow).toList();
     } catch (error) {
       throw mapNutritionError(error);
     }
   }
 
-  /// Fecha local actual en formato `YYYY-MM-DD` para comparar con la columna
-  /// `fecha` (tipo `date`) de `food_logs`.
-  String _today() {
-    final now = DateTime.now();
-    final month = now.month.toString().padLeft(2, '0');
-    final day = now.day.toString().padLeft(2, '0');
-    return '${now.year}-$month-$day';
+  /// Actualiza una comida existente por `id`. Solo toca las columnas editables
+  /// (ver [FoodLogModel.toUpdate]). El `eq('user_id', ...)` es explícito; el RLS
+  /// ya garantiza que solo afecta a filas propias.
+  Future<void> update(int id, FoodLogModel model) async {
+    final userId = _client.auth.currentUser?.id;
+    if (userId == null) {
+      throw const NutritionFailure(
+        'Tu sesión ha expirado. Vuelve a iniciar sesión.',
+      );
+    }
+
+    try {
+      await _client
+          .from('food_logs')
+          .update(model.toUpdate())
+          .eq('id', id)
+          .eq('user_id', userId);
+    } catch (error) {
+      throw mapNutritionError(error);
+    }
+  }
+
+  /// Borra una comida existente por `id`. El `eq('user_id', ...)` es explícito;
+  /// el RLS ya garantiza que solo afecta a filas propias.
+  Future<void> delete(int id) async {
+    final userId = _client.auth.currentUser?.id;
+    if (userId == null) {
+      throw const NutritionFailure(
+        'Tu sesión ha expirado. Vuelve a iniciar sesión.',
+      );
+    }
+
+    try {
+      await _client
+          .from('food_logs')
+          .delete()
+          .eq('id', id)
+          .eq('user_id', userId);
+    } catch (error) {
+      throw mapNutritionError(error);
+    }
+  }
+
+  /// Fecha local en formato `YYYY-MM-DD` para comparar con la columna `fecha`
+  /// (tipo `date`) de `food_logs`. Se usa la fecha local, no UTC.
+  String _formatDate(DateTime date) {
+    final month = date.month.toString().padLeft(2, '0');
+    final day = date.day.toString().padLeft(2, '0');
+    return '${date.year}-$month-$day';
   }
 }

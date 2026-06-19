@@ -4,24 +4,26 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_palette.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../domain/entities/daily_totals.dart';
-import '../../domain/entities/food_log.dart';
+import '../../domain/entities/food_log_entry.dart';
 import '../state/daily_nutrition_providers.dart';
 import '../widgets/add_meal_sheet.dart';
 import '../widgets/calorie_summary_card.dart';
+import '../widgets/day_navigator_header.dart';
 import '../widgets/food_log_tile.dart';
 
-/// Pantalla de Nutrición: tracking del consumo de HOY.
+/// Pantalla de Nutrición: tracking del consumo del día seleccionado.
 ///
-/// Muestra la barra de calorías (total / objetivo), el desglose de macros y la
-/// lista de comidas del día (lectura directa a Supabase, reactiva). El botón "+"
-/// abre el formulario de añadir comida en un bottom sheet. Al guardar, la vista
-/// se recompone sola al invalidarse [todayFoodLogsProvider].
+/// Muestra la cabecera de navegación entre días, la barra de calorías (total /
+/// objetivo), el desglose de macros y la lista de comidas del día (lectura
+/// directa a Supabase, reactiva). El botón "+" abre el formulario de añadir
+/// comida en un bottom sheet. Al guardar/editar/borrar, la vista se recompone
+/// sola al invalidarse [foodLogsForDayProvider].
 class NutritionPage extends ConsumerWidget {
   const NutritionPage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final logsAsync = ref.watch(todayFoodLogsProvider);
+    final logsAsync = ref.watch(foodLogsForDayProvider);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Nutrición')),
@@ -34,7 +36,7 @@ class NutritionPage extends ConsumerWidget {
         child: logsAsync.when(
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (_, _) => _ErrorState(
-            onRetry: () => ref.invalidate(todayFoodLogsProvider),
+            onRetry: () => ref.invalidate(foodLogsForDayProvider),
           ),
           data: (logs) => _DayContent(logs: logs),
         ),
@@ -49,7 +51,7 @@ class NutritionPage extends ConsumerWidget {
 class _DayContent extends StatelessWidget {
   const _DayContent({required this.logs});
 
-  final List<FoodLog> logs;
+  final List<FoodLogEntry> logs;
 
   @override
   Widget build(BuildContext context) {
@@ -58,7 +60,7 @@ class _DayContent extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Resumen fijo: queda anclado arriba y NO scrollea con la lista.
+        // Cabecera de día + resumen fijos: anclados arriba, NO scrollean.
         Padding(
           padding: const EdgeInsets.fromLTRB(
             AppSpacing.l,
@@ -66,7 +68,14 @@ class _DayContent extends StatelessWidget {
             AppSpacing.l,
             0,
           ),
-          child: CalorieSummaryCard(totals: totals),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const DayNavigatorHeader(),
+              const SizedBox(height: AppSpacing.s),
+              CalorieSummaryCard(totals: totals),
+            ],
+          ),
         ),
         // Solo la lista de comidas hace scroll (lazy).
         Expanded(
@@ -79,7 +88,7 @@ class _DayContent extends StatelessWidget {
                   // Cada tarjeta se separa con un hueco uniforme.
                   itemBuilder: (context, index) => Padding(
                     padding: const EdgeInsets.only(bottom: AppSpacing.m),
-                    child: FoodLogTile(log: logs[index]),
+                    child: FoodLogTile(entry: logs[index]),
                   ),
                 ),
         ),
@@ -108,13 +117,13 @@ class _EmptyState extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.m),
           Text(
-            'Aún no has registrado comidas hoy.',
+            'No hay comidas registradas este día.',
             style: textTheme.bodyMedium,
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: AppSpacing.xs),
           Text(
-            'Pulsa el botón + para añadir la primera.',
+            'Pulsa el botón + para añadir una.',
             style: textTheme.bodySmall,
             textAlign: TextAlign.center,
           ),

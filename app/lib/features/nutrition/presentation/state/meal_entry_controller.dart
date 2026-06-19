@@ -8,11 +8,14 @@ import '../../data/nutrition_failure.dart';
 import '../../data/repositories/food_log_repository_impl.dart';
 import '../../data/repositories/meal_estimation_repository_impl.dart';
 import '../../domain/entities/food_log.dart';
+import '../../domain/entities/food_log_entry.dart';
 import '../../domain/entities/nutrition_estimate.dart';
 import '../../domain/repositories/food_log_repository.dart';
 import '../../domain/repositories/meal_estimation_repository.dart';
+import '../../domain/usecases/delete_food_log.dart';
 import '../../domain/usecases/estimate_meal.dart';
 import '../../domain/usecases/save_meal.dart';
+import '../../domain/usecases/update_food_log.dart';
 
 /// Cableado de dependencias de la feature nutrición (data → domain), expuesto a
 /// la capa de presentation vía Riverpod. Mismo patrón que `auth_providers.dart`.
@@ -45,6 +48,14 @@ final saveMealProvider = Provider<SaveMeal>(
   (ref) => SaveMeal(ref.watch(foodLogRepositoryProvider)),
 );
 
+final updateFoodLogProvider = Provider<UpdateFoodLog>(
+  (ref) => UpdateFoodLog(ref.watch(foodLogRepositoryProvider)),
+);
+
+final deleteFoodLogProvider = Provider<DeleteFoodLog>(
+  (ref) => DeleteFoodLog(ref.watch(foodLogRepositoryProvider)),
+);
+
 /// Fase del flujo de registro de comida. La UI la usa para decidir qué mostrar
 /// (formulario de descripción, formulario editable, spinners, feedback de éxito).
 enum MealEntryStatus {
@@ -74,6 +85,7 @@ class MealEntryState {
     required this.status,
     this.estimate,
     this.errorMessage,
+    this.editingId,
   });
 
   const MealEntryState.initial() : this(status: MealEntryStatus.initial);
@@ -86,21 +98,30 @@ class MealEntryState {
   /// Mensaje de error legible (null = sin error). Nunca se silencia un fallo.
   final String? errorMessage;
 
+  /// `id` de la comida que se está editando (null = se está añadiendo una nueva).
+  /// Decide si [MealEntryController.save] hace UPDATE o INSERT.
+  final int? editingId;
+
   bool get isEstimating => status == MealEntryStatus.estimating;
   bool get isSaving => status == MealEntryStatus.saving;
 
   /// `true` desde que hay estimación hasta que se resetea (incluye guardando/guardado).
   bool get hasEstimate => estimate != null;
 
+  /// `true` si el flujo arrancó en modo edición de una comida existente.
+  bool get isEditing => editingId != null;
+
   MealEntryState copyWith({
     MealEntryStatus? status,
     NutritionEstimate? estimate,
     String? errorMessage,
+    int? editingId,
   }) {
     return MealEntryState(
       status: status ?? this.status,
       estimate: estimate ?? this.estimate,
       errorMessage: errorMessage,
+      editingId: editingId ?? this.editingId,
     );
   }
 }
@@ -137,7 +158,20 @@ class MealEntryController extends Notifier<MealEntryState> {
     }
   }
 
+  /// Arranca el flujo en modo EDICIÓN de una comida existente: siembra la
+  /// estimación con sus valores actuales y guarda su `id`, de modo que el
+  /// formulario aparece precargado (sin volver a estimar) y [save] hará UPDATE.
+  void startEdit(FoodLogEntry entry) {
+    state = MealEntryState(
+      status: MealEntryStatus.estimated,
+      estimate: entry.nutrition,
+      editingId: entry.id,
+    );
+  }
+
   /// Guarda en Supabase los valores CONFIRMADOS por el usuario (ya editados).
+  /// Si el flujo está en modo edición ([MealEntryState.editingId] != null) hace
+  /// UPDATE de la fila; si no, INSERT de una comida nueva.
   Future<void> save({
     required String descripcion,
     required double kcal,
@@ -145,25 +179,30 @@ class MealEntryController extends Notifier<MealEntryState> {
     required double carbos,
     required double grasa,
   }) async {
+    final editingId = state.editingId;
     state = state.copyWith(status: MealEntryStatus.saving);
     try {
-      await ref.read(saveMealProvider).call(
-            FoodLog(
-              descripcion: descripcion.trim(),
-              nutrition: NutritionEstimate(
-                kcal: kcal,
-                proteina: proteina,
-                carbos: carbos,
-                grasa: grasa,
-              ),
-            ),
-          );
+      final log = FoodLog(
+        descripcion: descripcion.trim(),
+        nutrition: NutritionEstimate(
+          kcal: kcal,
+          proteina: proteina,
+          carbos: carbos,
+          grasa: grasa,
+        ),
+      );
+      if (editingId != null) {
+        await ref.read(updateFoodLogProvider).call(editingId, log);
+      } else {
+        await ref.read(saveMealProvider).call(log);
+      }
       state = state.copyWith(status: MealEntryStatus.saved);
     } catch (error) {
       state = MealEntryState(
         status: MealEntryStatus.estimated,
         estimate: state.estimate,
         errorMessage: _message(error),
+        editingId: editingId,
       );
     }
   }

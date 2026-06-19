@@ -46,7 +46,7 @@ class CalorieSummaryCard extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.baseline,
             textBaseline: TextBaseline.alphabetic,
             children: [
-              Text('CALORÍAS DE HOY', style: textTheme.labelSmall),
+              Text('CALORÍAS DEL DÍA', style: textTheme.labelSmall),
               Text(
                 '$consumed / $goal kcal',
                 style: textTheme.labelLarge?.copyWith(

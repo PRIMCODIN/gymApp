@@ -1,11 +1,12 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/providers/supabase_provider.dart';
 import '../../data/datasources/calorie_goal_supabase_datasource.dart';
 import '../../data/repositories/calorie_goal_repository_impl.dart';
-import '../../domain/entities/food_log.dart';
+import '../../domain/entities/food_log_entry.dart';
 import '../../domain/repositories/calorie_goal_repository.dart';
-import '../../domain/usecases/fetch_today_food_logs.dart';
+import '../../domain/usecases/fetch_food_logs_by_date.dart';
 import '../../domain/usecases/get_daily_calorie_goal.dart';
 import 'meal_entry_controller.dart';
 
@@ -32,18 +33,38 @@ final getDailyCalorieGoalProvider = Provider<GetDailyCalorieGoal>(
   (ref) => GetDailyCalorieGoal(ref.watch(calorieGoalRepositoryProvider)),
 );
 
-// --- Comidas de hoy (food_logs filtrado por fecha = hoy) ---
+// --- Comidas del día seleccionado (food_logs filtrado por fecha) ---
 
-final fetchTodayFoodLogsProvider = Provider<FetchTodayFoodLogs>(
+final fetchFoodLogsByDateProvider = Provider<FetchFoodLogsByDate>(
   // Reutiliza el repositorio de food_logs ya definido en meal_entry_controller,
-  // ahora extendido con la lectura.
-  (ref) => FetchTodayFoodLogs(ref.watch(foodLogRepositoryProvider)),
+  // ahora extendido con la lectura por fecha.
+  (ref) => FetchFoodLogsByDate(ref.watch(foodLogRepositoryProvider)),
 );
 
-/// Comidas registradas hoy, más reciente primero. La pantalla principal lo
-/// observa; tras guardar una comida se invalida para que la UI se recomponga.
-final todayFoodLogsProvider = FutureProvider<List<FoodLog>>((ref) {
-  return ref.watch(fetchTodayFoodLogsProvider).call();
+/// Día actualmente visible en la pantalla de nutrición. Init = hoy (normalizado
+/// a medianoche local). La cabecera de día lo cambia con ◀ / ▶; al moverlo, las
+/// comidas del día se recomponen solas. El estado se mantiene siempre a
+/// medianoche local (el constructor de [DateTime] normaliza el desbordamiento de
+/// día/mes y es estable frente a cambios de horario).
+class SelectedDayNotifier extends Notifier<DateTime> {
+  @override
+  DateTime build() => DateUtils.dateOnly(DateTime.now());
+
+  void previousDay() => state = DateTime(state.year, state.month, state.day - 1);
+
+  void nextDay() => state = DateTime(state.year, state.month, state.day + 1);
+}
+
+final selectedDayProvider = NotifierProvider<SelectedDayNotifier, DateTime>(
+  SelectedDayNotifier.new,
+);
+
+/// Comidas del día seleccionado, más reciente primero. La pantalla principal lo
+/// observa; tras guardar/editar/borrar una comida se invalida para que la UI se
+/// recomponga.
+final foodLogsForDayProvider = FutureProvider<List<FoodLogEntry>>((ref) {
+  final day = ref.watch(selectedDayProvider);
+  return ref.watch(fetchFoodLogsByDateProvider).call(day);
 });
 
 /// Objetivo de kcal diario del usuario (default 2000). No depende de las comidas,

@@ -6,30 +6,45 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_card.dart';
 import '../../../../core/widgets/app_text_field.dart';
+import '../../domain/entities/food_log_entry.dart';
 import '../../domain/entities/nutrition_estimate.dart';
 import '../state/daily_nutrition_providers.dart';
 import '../state/meal_entry_controller.dart';
 import 'macro_field.dart';
 
-/// Abre el formulario de añadir comida en un diálogo centrado.
+/// Abre el formulario de comida en un diálogo centrado.
 ///
-/// Resetea el controlador antes de abrir para empezar siempre en estado inicial.
-/// El diálogo arranca compacto (solo la descripción) y se expande a casi pantalla
-/// completa al estimar, según el estado de [MealEntryController].
-Future<void> showAddMealSheet(BuildContext context, WidgetRef ref) {
-  ref.read(mealEntryControllerProvider.notifier).reset();
+/// Sin [existing] funciona en modo AÑADIR: resetea el controlador para empezar en
+/// estado inicial; el diálogo arranca compacto (solo la descripción) y se expande
+/// a casi pantalla completa al estimar. Con [existing] funciona en modo EDITAR:
+/// siembra el flujo con los valores actuales (vía [MealEntryController.startEdit])
+/// para que el formulario aparezca ya precargado, sin volver a estimar.
+Future<void> showAddMealSheet(
+  BuildContext context,
+  WidgetRef ref, {
+  FoodLogEntry? existing,
+}) {
+  final notifier = ref.read(mealEntryControllerProvider.notifier);
+  notifier.reset();
+  if (existing != null) {
+    notifier.startEdit(existing);
+  }
   return showDialog<void>(
     context: context,
-    builder: (_) => const AddMealSheet(),
+    builder: (_) => AddMealSheet(existing: existing),
   );
 }
 
-/// Contenido del diálogo de añadir comida: reúne el flujo existente
-/// describir → estimar (IA vía n8n) → editar → guardar (Supabase). La descripción
-/// y los valores editables viven en `TextEditingController`s locales; el estado de
-/// negocio lo gestiona [MealEntryController].
+/// Contenido del diálogo de comida: reúne el flujo existente
+/// describir → estimar (IA vía n8n) → editar → guardar (Supabase). En modo
+/// edición el formulario arranca precargado con los valores de [existing]. La
+/// descripción y los valores editables viven en `TextEditingController`s locales;
+/// el estado de negocio lo gestiona [MealEntryController].
 class AddMealSheet extends ConsumerStatefulWidget {
-  const AddMealSheet({super.key});
+  const AddMealSheet({super.key, this.existing});
+
+  /// Comida que se está editando, o null si se está añadiendo una nueva.
+  final FoodLogEntry? existing;
 
   @override
   ConsumerState<AddMealSheet> createState() => _AddMealSheetState();
@@ -41,6 +56,17 @@ class _AddMealSheetState extends ConsumerState<AddMealSheet> {
   final _proteinaController = TextEditingController();
   final _carbosController = TextEditingController();
   final _grasaController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    // En modo edición, precarga la descripción (los macros los rellena el
+    // `ref.listen` al detectar la estimación sembrada por `startEdit`).
+    final existing = widget.existing;
+    if (existing != null) {
+      _descripcionController.text = existing.descripcion;
+    }
+  }
 
   @override
   void dispose() {
@@ -126,9 +152,9 @@ class _AddMealSheetState extends ConsumerState<AddMealSheet> {
       }
       if (next.status == MealEntryStatus.saved &&
           previous?.status != MealEntryStatus.saved) {
-        // Reactividad: invalidar la lectura de hoy fuerza el refetch y la
+        // Reactividad: invalidar la lectura del día fuerza el refetch y la
         // pantalla principal (barra + macros + lista) se recompone sola.
-        ref.invalidate(todayFoodLogsProvider);
+        ref.invalidate(foodLogsForDayProvider);
         ref.read(mealEntryControllerProvider.notifier).reset();
         Navigator.of(context).pop();
       }
@@ -174,7 +200,12 @@ class _AddMealSheetState extends ConsumerState<AddMealSheet> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  _DialogHeader(onClose: _onCancel),
+                  _DialogHeader(
+                    title: widget.existing == null
+                        ? 'Añadir comida'
+                        : 'Editar comida',
+                    onClose: _onCancel,
+                  ),
                   const SizedBox(height: AppSpacing.l),
                   _DescriptionSection(
                     controller: _descripcionController,
@@ -205,8 +236,9 @@ class _AddMealSheetState extends ConsumerState<AddMealSheet> {
 
 /// Cabecera del diálogo: título y botón de cierre (descarta sin guardar).
 class _DialogHeader extends StatelessWidget {
-  const _DialogHeader({required this.onClose});
+  const _DialogHeader({required this.title, required this.onClose});
 
+  final String title;
   final VoidCallback onClose;
 
   @override
@@ -216,7 +248,7 @@ class _DialogHeader extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text('Añadir comida', style: textTheme.labelLarge),
+        Text(title, style: textTheme.labelLarge),
         IconButton(
           onPressed: onClose,
           icon: Icon(Icons.close, color: context.palette.textSecondary),
