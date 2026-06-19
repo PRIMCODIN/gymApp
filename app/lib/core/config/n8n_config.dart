@@ -11,7 +11,7 @@ class N8nConfig {
   ///   - Emulador Android (accede al host por una IP especial) → `http://10.0.2.2:5678`
   ///   - Móvil físico (debe ver el PC en la LAN) → `http://IP-DEL-PC:5678`
   /// Cambia solo este valor para apuntar a otro entorno.
-  static const String baseUrl = 'http://localhost:5678';
+  static const String baseUrl = 'http://10.0.2.2:5678';
 
   /// Path del webhook que estima kcal + macros a partir de la descripción.
   // TODO: sustituir por el path REAL del nodo Webhook de n8n (verifícalo en el
