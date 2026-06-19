@@ -60,15 +60,21 @@ class CalorieSummaryCard extends ConsumerWidget {
             value: progress,
             context: AppProgressContext.calories,
           ),
-          if (exceeded) ...[
-            const SizedBox(height: AppSpacing.s),
+          const SizedBox(height: AppSpacing.s),
+          // Restantes vs exceso son mutuamente excluyentes: o te quedan kcal o ya
+          // pasaste del objetivo.
+          if (exceeded)
             Text(
               'Has superado tu objetivo en ${consumed - goal} kcal.',
               style: textTheme.bodySmall?.copyWith(
                 color: palette.accentNutritionSoft,
               ),
+            )
+          else
+            Text(
+              'Te quedan ${goal - consumed} kcal',
+              style: textTheme.bodySmall,
             ),
-          ],
           const SizedBox(height: AppSpacing.l),
           MacroSummary(totals: totals),
         ],

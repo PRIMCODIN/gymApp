@@ -55,20 +55,34 @@ class _DayContent extends StatelessWidget {
   Widget build(BuildContext context) {
     final totals = DailyTotals.fromLogs(logs);
 
-    return ListView(
-      padding: const EdgeInsets.all(AppSpacing.l),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        CalorieSummaryCard(totals: totals),
-        const SizedBox(height: AppSpacing.l),
-        if (logs.isEmpty)
-          const _EmptyState()
-        else
-          // Más reciente primero (orden garantizado por la consulta). Se separa
-          // cada tarjeta con un hueco uniforme.
-          for (final log in logs) ...[
-            FoodLogTile(log: log),
-            const SizedBox(height: AppSpacing.m),
-          ],
+        // Resumen fijo: queda anclado arriba y NO scrollea con la lista.
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+            AppSpacing.l,
+            AppSpacing.l,
+            AppSpacing.l,
+            0,
+          ),
+          child: CalorieSummaryCard(totals: totals),
+        ),
+        // Solo la lista de comidas hace scroll (lazy).
+        Expanded(
+          child: logs.isEmpty
+              ? const _EmptyState()
+              : ListView.builder(
+                  padding: const EdgeInsets.all(AppSpacing.l),
+                  itemCount: logs.length,
+                  // Más reciente primero (orden garantizado por la consulta).
+                  // Cada tarjeta se separa con un hueco uniforme.
+                  itemBuilder: (context, index) => Padding(
+                    padding: const EdgeInsets.only(bottom: AppSpacing.m),
+                    child: FoodLogTile(log: logs[index]),
+                  ),
+                ),
+        ),
       ],
     );
   }
@@ -83,8 +97,9 @@ class _EmptyState extends StatelessWidget {
     final textTheme = Theme.of(context).textTheme;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
+      padding: const EdgeInsets.all(AppSpacing.l),
       child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
             Icons.restaurant_outlined,

@@ -11,20 +11,20 @@ import '../state/daily_nutrition_providers.dart';
 import '../state/meal_entry_controller.dart';
 import 'macro_field.dart';
 
-/// Abre el formulario de añadir comida en un bottom sheet deslizante.
+/// Abre el formulario de añadir comida en un diálogo centrado.
 ///
 /// Resetea el controlador antes de abrir para empezar siempre en estado inicial.
-/// `isScrollControlled` permite que crezca y respete el teclado.
+/// El diálogo arranca compacto (solo la descripción) y se expande a casi pantalla
+/// completa al estimar, según el estado de [MealEntryController].
 Future<void> showAddMealSheet(BuildContext context, WidgetRef ref) {
   ref.read(mealEntryControllerProvider.notifier).reset();
-  return showModalBottomSheet<void>(
+  return showDialog<void>(
     context: context,
-    isScrollControlled: true,
     builder: (_) => const AddMealSheet(),
   );
 }
 
-/// Contenido del bottom sheet de añadir comida: reúne el flujo existente
+/// Contenido del diálogo de añadir comida: reúne el flujo existente
 /// describir → estimar (IA vía n8n) → editar → guardar (Supabase). La descripción
 /// y los valores editables viven en `TextEditingController`s locales; el estado de
 /// negocio lo gestiona [MealEntryController].
@@ -139,39 +139,63 @@ class _AddMealSheetState extends ConsumerState<AddMealSheet> {
     });
 
     final state = ref.watch(mealEntryControllerProvider);
+    final media = MediaQuery.of(context);
 
-    return Padding(
-      // Respeta el teclado: empuja el contenido por encima del IME.
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
+    // Compacto al describir; casi pantalla completa tras estimar.
+    final expanded = state.hasEstimate;
+    // Alto disponible descontando los insets del diálogo y el teclado.
+    final maxHeight =
+        media.size.height - AppSpacing.l * 2 - media.viewInsets.bottom;
+
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      insetPadding: EdgeInsets.only(
+        left: AppSpacing.l,
+        right: AppSpacing.l,
+        top: AppSpacing.l,
+        // Respeta el teclado: empuja el contenido por encima del IME.
+        bottom: AppSpacing.l + media.viewInsets.bottom,
       ),
-      child: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(AppSpacing.l),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const _SheetHandle(),
-              const SizedBox(height: AppSpacing.l),
-              _DescriptionSection(
-                controller: _descripcionController,
-                isEstimating: state.isEstimating,
-                onEstimate: _onEstimate,
+      // Anima la transición compacto → casi-fullscreen al estimar.
+      child: AnimatedSize(
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeInOut,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: maxHeight,
+            // Al expandir, fuerza el alto para ocupar casi toda la pantalla.
+            minHeight: expanded ? maxHeight : 0,
+          ),
+          child: AppCard(
+            padding: const EdgeInsets.all(AppSpacing.l),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _DialogHeader(onClose: _onCancel),
+                  const SizedBox(height: AppSpacing.l),
+                  _DescriptionSection(
+                    controller: _descripcionController,
+                    isEstimating: state.isEstimating,
+                    onEstimate: _onEstimate,
+                  ),
+                  if (state.hasEstimate) ...[
+                    const SizedBox(height: AppSpacing.l),
+                    _EstimateForm(
+                      kcalController: _kcalController,
+                      proteinaController: _proteinaController,
+                      carbosController: _carbosController,
+                      grasaController: _grasaController,
+                      isSaving: state.isSaving,
+                      onSave: _onSave,
+                      onCancel: _onCancel,
+                    ),
+                  ],
+                ],
               ),
-              if (state.hasEstimate) ...[
-                const SizedBox(height: AppSpacing.l),
-                _EstimateForm(
-                  kcalController: _kcalController,
-                  proteinaController: _proteinaController,
-                  carbosController: _carbosController,
-                  grasaController: _grasaController,
-                  isSaving: state.isSaving,
-                  onSave: _onSave,
-                  onCancel: _onCancel,
-                ),
-              ],
-            ],
+            ),
           ),
         ),
       ),
@@ -179,21 +203,26 @@ class _AddMealSheetState extends ConsumerState<AddMealSheet> {
   }
 }
 
-/// Pequeño tirador superior, indicativo de que el panel es deslizable.
-class _SheetHandle extends StatelessWidget {
-  const _SheetHandle();
+/// Cabecera del diálogo: título y botón de cierre (descarta sin guardar).
+class _DialogHeader extends StatelessWidget {
+  const _DialogHeader({required this.onClose});
+
+  final VoidCallback onClose;
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Container(
-        width: AppSpacing.xl,
-        height: AppSpacing.xs,
-        decoration: BoxDecoration(
-          color: context.palette.divider,
-          borderRadius: BorderRadius.circular(AppSpacing.xs),
+    final textTheme = Theme.of(context).textTheme;
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text('Añadir comida', style: textTheme.labelLarge),
+        IconButton(
+          onPressed: onClose,
+          icon: Icon(Icons.close, color: context.palette.textSecondary),
+          tooltip: 'Cerrar',
         ),
-      ),
+      ],
     );
   }
 }
