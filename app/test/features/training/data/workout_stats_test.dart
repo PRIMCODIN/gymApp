@@ -1,3 +1,4 @@
+import 'package:app/features/training/data/workout_edit_ops.dart';
 import 'package:app/features/training/data/workout_stats.dart';
 import 'package:app/features/training/domain/entities/workout_detail.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -32,6 +33,20 @@ void main() {
 
     test('lista vacía → 0', () {
       expect(computeTotalVolume(const []), 0);
+    });
+
+    test('se recalcula sobre el estado editado tras borrar un set', () {
+      final sets = [
+        const WorkoutDetailSet(numSet: 1, completado: true, reps: 10, peso: 50),
+        const WorkoutDetailSet(numSet: 2, completado: true, reps: 8, peso: 60),
+        const WorkoutDetailSet(numSet: 3, completado: true, reps: 5, peso: 20),
+      ];
+      // Volumen inicial: 500 + 480 + 100 = 1080.
+      expect(computeTotalVolume(sets), 1080);
+
+      // Tras borrar el 2º set (480), el volumen del estado editado baja a 600.
+      final editados = removeSetAndRenumber(sets, 1);
+      expect(computeTotalVolume(editados), 600);
     });
   });
 
@@ -100,6 +115,26 @@ void main() {
       expect(set.reps, 12);
       expect(set.peso, 15.5);
       expect(set.completado, isFalse);
+    });
+
+    test('lee exercise_id (snapshot) y rpe del set', () {
+      final rows = <Map<String, dynamic>>[
+        {
+          'exercise_id': 42,
+          'orden_ejercicio': 1,
+          'nombre_ejercicio': 'Press banca',
+          'grupo_muscular': 'pecho',
+          'num_set': 1,
+          'reps': 8,
+          'peso': 60,
+          'completado': true,
+          'rpe': 8.5,
+        },
+      ];
+
+      final exercise = groupSetsIntoExercises(rows).single;
+      expect(exercise.exerciseId, 42);
+      expect(exercise.sets.single.rpe, 8.5);
     });
 
     test('lista vacía → sin ejercicios', () {

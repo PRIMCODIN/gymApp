@@ -18,6 +18,32 @@ abstract final class WorkoutDetailModel {
       exercises: groupSetsIntoExercises(setRows),
     );
   }
+
+  /// Aplana el estado editado (ejercicios -> sets) en filas de INSERT para
+  /// `workout_sets`, preservando todos los snapshots (`exercise_id`,
+  /// `nombre_ejercicio`, `grupo_muscular`) y `completado`/`rpe`. Se asume que
+  /// `orden`/`num_set` ya vienen renumerados. El `id` lo pone la BD.
+  static List<Map<String, dynamic>> toInsertRows(
+    int workoutId,
+    List<WorkoutDetailExercise> exercises,
+  ) {
+    return [
+      for (final exercise in exercises)
+        for (final set in exercise.sets)
+          {
+            'workout_id': workoutId,
+            'exercise_id': exercise.exerciseId,
+            'nombre_ejercicio': exercise.nombreEjercicio,
+            'grupo_muscular': exercise.grupoMuscular,
+            'orden_ejercicio': exercise.orden,
+            'num_set': set.numSet,
+            'reps': set.reps,
+            'peso': set.peso,
+            'completado': set.completado,
+            'rpe': set.rpe,
+          },
+    ];
+  }
 }
 
 int? _readInt(Object? value) {

@@ -34,6 +34,7 @@ List<WorkoutDetailExercise> groupSetsIntoExercises(
     final acc = byOrden.putIfAbsent(
       orden,
       () => _ExerciseAccumulator(
+        exerciseId: _readInt(row['exercise_id']),
         nombreEjercicio: (row['nombre_ejercicio'] as String?) ?? '',
         grupoMuscular: (row['grupo_muscular'] as String?) ?? '',
         orden: orden,
@@ -45,6 +46,7 @@ List<WorkoutDetailExercise> groupSetsIntoExercises(
         reps: _readInt(row['reps']),
         peso: _readDouble(row['peso']),
         completado: (row['completado'] as bool?) ?? false,
+        rpe: _readDouble(row['rpe']),
       ),
     );
   }
@@ -57,11 +59,13 @@ List<WorkoutDetailExercise> groupSetsIntoExercises(
 /// Acumulador mutable interno mientras se agrupan las filas de un ejercicio.
 class _ExerciseAccumulator {
   _ExerciseAccumulator({
+    required this.exerciseId,
     required this.nombreEjercicio,
     required this.grupoMuscular,
     required this.orden,
   });
 
+  final int? exerciseId;
   final String nombreEjercicio;
   final String grupoMuscular;
   final int orden;
@@ -70,6 +74,7 @@ class _ExerciseAccumulator {
   WorkoutDetailExercise toEntity() {
     sets.sort((a, b) => a.numSet.compareTo(b.numSet));
     return WorkoutDetailExercise(
+      exerciseId: exerciseId,
       nombreEjercicio: nombreEjercicio,
       grupoMuscular: grupoMuscular,
       orden: orden,

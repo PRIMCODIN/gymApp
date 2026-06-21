@@ -16,6 +16,17 @@ abstract class WorkoutHistoryRepository {
   /// Detalle completo de un workout (ejercicios -> sets ordenados).
   Future<WorkoutDetail> fetchWorkoutDetail(int workoutId);
 
+  /// Guarda la edición de un workout pasado: actualiza la cabecera (nombre,
+  /// fecha) y REEMPLAZA sus `workout_sets` por el estado editado (ya renumerado),
+  /// preservando los snapshots (`exercise_id`, `nombre_ejercicio`,
+  /// `grupo_muscular`) y `completado`/`rpe`.
+  Future<void> updateWorkout(
+    int workoutId,
+    String nombre,
+    DateTime fecha,
+    List<WorkoutDetailExercise> exercises,
+  );
+
   /// Borra el workout entero (el cascade limpia sus `workout_sets`).
   Future<void> deleteWorkout(int workoutId);
 }

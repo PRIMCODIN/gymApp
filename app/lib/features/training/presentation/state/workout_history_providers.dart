@@ -10,6 +10,7 @@ import '../../domain/usecases/delete_workout.dart';
 import '../../domain/usecases/fetch_workout_dates_for_month.dart';
 import '../../domain/usecases/fetch_workout_detail.dart';
 import '../../domain/usecases/fetch_workouts_for_day.dart';
+import '../../domain/usecases/save_workout_edits.dart';
 
 /// Cableado de dependencias del historial (data → domain), expuesto a presentation
 /// vía Riverpod. Mismo patrón que `routine_providers.dart`: lectura directa a
@@ -43,6 +44,10 @@ final fetchWorkoutDetailProvider = Provider<FetchWorkoutDetail>(
 
 final deleteWorkoutProvider = Provider<DeleteWorkout>(
   (ref) => DeleteWorkout(ref.watch(workoutHistoryRepositoryProvider)),
+);
+
+final saveWorkoutEditsProvider = Provider<SaveWorkoutEdits>(
+  (ref) => SaveWorkoutEdits(ref.watch(workoutHistoryRepositoryProvider)),
 );
 
 /// Clave del mes mostrado para el provider de marcadores del calendario.

@@ -88,14 +88,45 @@ class WorkoutHistorySupabaseDataSource {
       final setRows = await _client
           .from('workout_sets')
           .select(
-            'orden_ejercicio, nombre_ejercicio, grupo_muscular, num_set, '
-            'reps, peso, completado',
+            'exercise_id, orden_ejercicio, nombre_ejercicio, grupo_muscular, '
+            'num_set, reps, peso, completado, rpe',
           )
           .eq('workout_id', workoutId)
           .order('orden_ejercicio')
           .order('num_set');
 
       return WorkoutDetailModel.fromRows(workoutRow, setRows);
+    } catch (error) {
+      throw mapTrainingError(error);
+    }
+  }
+
+  /// Guarda la edición de un workout pasado: actualiza la cabecera (`nombre`,
+  /// `fecha`) y REEMPLAZA sus `workout_sets` por el estado editado. Sigue la misma
+  /// estrategia delete-then-insert que `updateRoutine`: UPDATE cabecera -> DELETE
+  /// de los sets viejos -> INSERT de los editados. No se puede insertar antes de
+  /// borrar (FK al mismo `workout_id`); si algo falla, el detalle se recarga desde
+  /// BD al invalidar su provider. El RLS limita a los workouts propios.
+  Future<void> updateWorkout(
+    int workoutId,
+    String nombre,
+    DateTime fecha,
+    List<WorkoutDetailExercise> exercises,
+  ) async {
+    final userId = _requireUserId();
+    try {
+      await _client
+          .from('workouts')
+          .update({'nombre': nombre, 'fecha': _formatDate(fecha)})
+          .eq('id', workoutId)
+          .eq('user_id', userId);
+
+      await _client.from('workout_sets').delete().eq('workout_id', workoutId);
+
+      final rows = WorkoutDetailModel.toInsertRows(workoutId, exercises);
+      if (rows.isNotEmpty) {
+        await _client.from('workout_sets').insert(rows);
+      }
     } catch (error) {
       throw mapTrainingError(error);
     }

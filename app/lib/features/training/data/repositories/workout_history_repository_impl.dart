@@ -23,6 +23,15 @@ class WorkoutHistoryRepositoryImpl implements WorkoutHistoryRepository {
       _datasource.fetchWorkoutDetail(workoutId);
 
   @override
+  Future<void> updateWorkout(
+    int workoutId,
+    String nombre,
+    DateTime fecha,
+    List<WorkoutDetailExercise> exercises,
+  ) =>
+      _datasource.updateWorkout(workoutId, nombre, fecha, exercises);
+
+  @override
   Future<void> deleteWorkout(int workoutId) =>
       _datasource.deleteWorkout(workoutId);
 }
