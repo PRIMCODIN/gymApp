@@ -15,13 +15,17 @@ class WorkoutSupabaseDataSource {
 
   final SupabaseClient _client;
 
-  /// Inserta la cabecera del workout (`finalizado=false`) y devuelve su `id`.
-  Future<int> startWorkout(String nombre) async {
+  /// Inserta la cabecera del workout (`finalizado=false`) y devuelve su `id`. Si
+  /// la sesión arranca desde una rutina, se guarda su [routineId] para trazar el
+  /// origen (la columna ya existe en `workouts`).
+  Future<int> startWorkout(String nombre, {int? routineId}) async {
     final userId = _requireUserId();
     try {
       final row = await _client
           .from('workouts')
-          .insert(WorkoutModel.toStartInsert(userId, nombre))
+          .insert(
+            WorkoutModel.toStartInsert(userId, nombre, routineId: routineId),
+          )
           .select('id')
           .single();
       return (row['id'] as num).toInt();

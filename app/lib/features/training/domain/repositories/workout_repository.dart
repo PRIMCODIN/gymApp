@@ -9,8 +9,9 @@ import '../entities/previous_set_performance.dart';
 /// directas, ver `specs/architecture.md`).
 abstract class WorkoutRepository {
   /// Crea una sesión nueva (`finalizado=false`) y devuelve su `id`. Los sets se
-  /// guardan luego, al finalizar.
-  Future<int> startWorkout(String nombre);
+  /// guardan luego, al finalizar. [routineId] traza el origen cuando la sesión
+  /// arranca desde una rutina (null en el entreno libre).
+  Future<int> startWorkout(String nombre, {int? routineId});
 
   /// Rendimiento de la ÚLTIMA sesión finalizada del usuario con [exerciseId],
   /// set a set y ordenado por `num_set`. Lista vacía si no hay histórico.

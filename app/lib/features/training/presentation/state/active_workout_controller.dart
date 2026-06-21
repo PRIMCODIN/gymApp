@@ -5,6 +5,8 @@ import '../../domain/entities/active_exercise.dart';
 import '../../domain/entities/active_set.dart';
 import '../../domain/entities/active_workout.dart';
 import '../../domain/entities/exercise.dart';
+import '../../domain/entities/routine.dart';
+import '../utils/routine_session_builder.dart';
 import '../utils/workout_session_format.dart';
 import 'workout_session_providers.dart';
 
@@ -100,6 +102,40 @@ class ActiveWorkoutController extends Notifier<ActiveWorkoutState> {
           fecha: DateTime(now.year, now.month, now.day),
           startedAt: now,
           exercises: const [],
+        ),
+      );
+    } catch (error) {
+      state = ActiveWorkoutState(
+        status: ActiveSessionStatus.idle,
+        errorMessage: _message(error),
+      );
+    }
+  }
+
+  /// Inicia una sesión PRECARGADA desde una rutina: persiste el workout con su
+  /// `routine_id` (trazabilidad) y precarga un ejercicio por cada item de la
+  /// rutina, con `seriesObjetivo` sets vacíos en orden. A partir de aquí la
+  /// sesión funciona igual que la libre (rellenar, PREVIOUS, finalizar): se
+  /// reutiliza toda la mecánica, solo cambia el punto de entrada.
+  Future<void> startFromRoutine(Routine routine) async {
+    if (state.status != ActiveSessionStatus.idle) return;
+
+    final now = DateTime.now();
+    final nombre = routine.nombre;
+    state = const ActiveWorkoutState(status: ActiveSessionStatus.starting);
+
+    try {
+      final id = await ref
+          .read(startWorkoutProvider)
+          .call(nombre, routineId: routine.id);
+      state = ActiveWorkoutState(
+        status: ActiveSessionStatus.active,
+        workout: ActiveWorkout(
+          id: id,
+          nombre: nombre,
+          fecha: DateTime(now.year, now.month, now.day),
+          startedAt: now,
+          exercises: routineToActiveExercises(routine, _nextSetUid),
         ),
       );
     } catch (error) {

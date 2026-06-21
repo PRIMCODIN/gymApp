@@ -10,8 +10,8 @@ class WorkoutRepositoryImpl implements WorkoutRepository {
   final WorkoutSupabaseDataSource _datasource;
 
   @override
-  Future<int> startWorkout(String nombre) =>
-      _datasource.startWorkout(nombre);
+  Future<int> startWorkout(String nombre, {int? routineId}) =>
+      _datasource.startWorkout(nombre, routineId: routineId);
 
   @override
   Future<List<PreviousSetPerformance>> fetchPreviousPerformance(
