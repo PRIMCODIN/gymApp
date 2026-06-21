@@ -13,6 +13,8 @@ import '../utils/workout_session_format.dart';
 import '../widgets/active_exercise_card.dart';
 import '../widgets/empty_session_state.dart';
 import '../widgets/exercise_picker_sheet.dart';
+import 'routines_page.dart';
+import 'workout_history_page.dart';
 
 /// Pantalla de Entreno: sesión activa estilo Hevy.
 ///
@@ -75,7 +77,8 @@ class _StartView extends StatelessWidget {
           Text('Entreno', style: textTheme.headlineMedium),
           const SizedBox(height: AppSpacing.s),
           Text(
-            'Empieza una sesión libre y registra tus series sobre la marcha.',
+            'Empieza una sesión libre y registra tus series sobre la marcha, '
+            'o arranca desde una de tus rutinas.',
             style: textTheme.bodyMedium?.copyWith(color: palette.textSecondary),
           ),
           const SizedBox(height: AppSpacing.l),
@@ -83,6 +86,30 @@ class _StartView extends StatelessWidget {
             label: 'Empezar entreno',
             isLoading: isLoading,
             onPressed: onStart,
+          ),
+          const SizedBox(height: AppSpacing.m),
+          AppButton(
+            label: 'Mis rutinas',
+            variant: AppButtonVariant.neutral,
+            onPressed: isLoading
+                ? null
+                : () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => const RoutinesPage(),
+                      ),
+                    ),
+          ),
+          const SizedBox(height: AppSpacing.m),
+          AppButton(
+            label: 'Historial',
+            variant: AppButtonVariant.neutral,
+            onPressed: isLoading
+                ? null
+                : () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => const WorkoutHistoryPage(),
+                      ),
+                    ),
           ),
         ],
       ),
