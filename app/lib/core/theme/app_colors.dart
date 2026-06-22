@@ -44,4 +44,11 @@ abstract final class AppColors {
   /// partir del mockup, que usa un gris más apagado para los placeholders de los
   /// inputs. La spec permite ajustar/añadir tokens (los hex son punto de partida).
   static const Color textTertiary = Color(0xFF6B7280);
+
+  /// Rojo de acción destructiva (p. ej. cerrar sesión, borrar).
+  ///
+  /// Igual que [textTertiary], es un token añadido fuera de la tabla de la spec:
+  /// el design system permite ampliar tokens. Se reserva exclusivamente para lo
+  /// destructivo; no compite con los acentos training/nutrition.
+  static const Color destructive = Color(0xFFF87171);
 }

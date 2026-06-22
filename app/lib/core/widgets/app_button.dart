@@ -14,6 +14,9 @@ enum AppButtonVariant {
 
   /// Acción secundaria / neutra (sobre `surfaceElevated`).
   neutral,
+
+  /// Acción destructiva (rojo): cerrar sesión, borrar.
+  destructive,
 }
 
 /// Botón principal reutilizable. Toma todos sus colores y tamaños del theme y de
@@ -44,6 +47,7 @@ class AppButton extends StatelessWidget {
       AppButtonVariant.training => palette.accentTraining,
       AppButtonVariant.nutrition => palette.accentNutrition,
       AppButtonVariant.neutral => palette.surfaceElevated,
+      AppButtonVariant.destructive => palette.destructive,
     };
     // Sobre los acentos vivos el texto oscuro contrasta mejor; en neutro, claro.
     final foreground = isNeutral ? AppColors.textPrimary : AppColors.background;
