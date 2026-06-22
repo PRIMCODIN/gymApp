@@ -3,10 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/providers/supabase_provider.dart';
 import '../../data/datasources/training_stats_supabase_datasource.dart';
 import '../../data/repositories/training_stats_repository_impl.dart';
+import '../../domain/entities/last_workout.dart';
 import '../../domain/repositories/training_stats_repository.dart';
 import '../../domain/usecases/count_finished_workouts.dart';
 import '../../domain/usecases/count_finished_workouts_this_month.dart';
 import '../../domain/usecases/get_current_streak.dart';
+import '../../domain/usecases/get_last_finished_workout.dart';
 
 /// Cableado de las stats de entreno del Perfil (data → domain), expuesto a la
 /// capa de presentation vía Riverpod. Mismo patrón que `profile_providers.dart`.
@@ -54,4 +56,14 @@ final workoutsThisMonthProvider = FutureProvider<int>(
 /// Racha actual de semanas consecutivas con ≥3 entrenos finalizados.
 final weeklyStreakProvider = FutureProvider<int>(
   (ref) => ref.watch(getCurrentStreakProvider).call(),
+);
+
+final getLastFinishedWorkoutProvider = Provider<GetLastFinishedWorkout>(
+  (ref) => GetLastFinishedWorkout(ref.watch(trainingStatsRepositoryProvider)),
+);
+
+/// Último entreno finalizado del usuario (nombre + fecha), o `null` si no tiene
+/// ninguno. Estado loading/error/data independiente, igual que los demás.
+final lastFinishedWorkoutProvider = FutureProvider<LastWorkout?>(
+  (ref) => ref.watch(getLastFinishedWorkoutProvider).call(),
 );

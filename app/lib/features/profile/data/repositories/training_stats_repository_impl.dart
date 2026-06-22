@@ -1,3 +1,4 @@
+import '../../domain/entities/last_workout.dart';
 import '../../domain/repositories/training_stats_repository.dart';
 import '../datasources/training_stats_supabase_datasource.dart';
 
@@ -18,4 +19,8 @@ class TrainingStatsRepositoryImpl implements TrainingStatsRepository {
   @override
   Future<List<DateTime>> fetchFinishedWorkoutDates() =>
       _datasource.fetchFinishedWorkoutDates();
+
+  @override
+  Future<LastWorkout?> fetchLastFinishedWorkout() =>
+      _datasource.fetchLastFinishedWorkout();
 }

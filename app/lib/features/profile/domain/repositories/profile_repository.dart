@@ -8,7 +8,7 @@ import '../entities/profile.dart';
 /// directas, no pasan por n8n: es un guardado simple sin IA (ver
 /// `specs/architecture.md`). `plan` nunca se escribe desde el cliente.
 abstract class ProfileRepository {
-  /// Perfil del usuario en sesión (kcalGoal cae a 2000 si no hay dato).
+  /// Perfil del usuario en sesión (`kcalGoal` es `null` si no lo ha fijado).
   Future<Profile> fetchProfile();
 
   /// Actualiza solo `objetivo_kcal_diario`.

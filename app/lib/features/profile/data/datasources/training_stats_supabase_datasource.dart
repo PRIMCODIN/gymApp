@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../domain/entities/last_workout.dart';
 import '../profile_failure.dart';
 
 /// Fuente de datos de las stats de entreno del Perfil. Lee directo de Supabase
@@ -57,6 +58,32 @@ class TrainingStatsSupabaseDataSource {
       return rows
           .map((row) => DateTime.parse(row['fecha'] as String))
           .toList();
+    } catch (error) {
+      throw mapProfileError(error);
+    }
+  }
+
+  /// Último workout finalizado del usuario (nombre + fecha), o `null` si no tiene
+  /// ninguno. Orden `fecha desc, created_at desc` (la fecha es `date` sin hora:
+  /// dos entrenos el mismo día se desempatan por `created_at` de forma
+  /// determinista). Solo trae las columnas necesarias (no `select('*')`). El RLS
+  /// de `workouts` ya limita a los propios.
+  Future<LastWorkout?> fetchLastFinishedWorkout() async {
+    _requireUserId();
+    try {
+      final rows = await _client
+          .from('workouts')
+          .select('nombre, fecha')
+          .eq('finalizado', true)
+          .order('fecha', ascending: false)
+          .order('created_at', ascending: false)
+          .limit(1);
+      if (rows.isEmpty) return null;
+      final row = rows.first;
+      return LastWorkout(
+        nombre: row['nombre'] as String,
+        fecha: DateTime.parse(row['fecha'] as String),
+      );
     } catch (error) {
       throw mapProfileError(error);
     }

@@ -18,15 +18,13 @@ class ProfileModel extends Profile {
     required super.goal,
   });
 
-  /// Default de `objetivo_kcal_diario` cuando aún no hay valor (coincide con BD).
-  static const int _defaultKcalGoal = 2000;
-
   /// Construye el modelo desde una fila de `profiles` (SELECT). Tolera nulls:
-  /// `kcalGoal` cae al default; el resto se queda en `null` (perfil sin rellenar).
+  /// todos los campos opcionales se quedan en `null` cuando el perfil no los ha
+  /// rellenado (incluido `kcalGoal`: `null` = objetivo sin fijar, no un 2000).
   factory ProfileModel.fromRow(Map<String, dynamic> row) {
     return ProfileModel(
       name: row['nombre'] as String?,
-      kcalGoal: _readInt(row['objetivo_kcal_diario']) ?? _defaultKcalGoal,
+      kcalGoal: _readInt(row['objetivo_kcal_diario']),
       plan: (row['plan'] as String?) ?? 'free',
       sex: row['sexo'] as String?,
       birthDate: _readDate(row['fecha_nacimiento']),

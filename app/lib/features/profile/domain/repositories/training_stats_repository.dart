@@ -1,3 +1,5 @@
+import '../entities/last_workout.dart';
+
 /// Contrato de stats de entreno mostradas en el Perfil. Solo lectura: cuentas
 /// agregadas de `workouts` finalizados del usuario en sesión (el RLS las limita
 /// a los propios). Implementado en data con count directo a Supabase.
@@ -11,4 +13,8 @@ abstract class TrainingStatsRepository {
   /// Fechas de todos los workouts finalizados del usuario (una por sesión).
   /// Alimentan el cálculo de la racha semanal en dominio.
   Future<List<DateTime>> fetchFinishedWorkoutDates();
+
+  /// Último workout finalizado del usuario (nombre + fecha), o `null` si todavía
+  /// no tiene ninguno. Ordenado por fecha (y `created_at` como desempate).
+  Future<LastWorkout?> fetchLastFinishedWorkout();
 }

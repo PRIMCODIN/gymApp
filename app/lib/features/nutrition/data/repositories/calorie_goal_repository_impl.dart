@@ -8,5 +8,5 @@ class CalorieGoalRepositoryImpl implements CalorieGoalRepository {
   final CalorieGoalSupabaseDataSource _datasource;
 
   @override
-  Future<int> fetchDailyGoal() => _datasource.fetchDailyGoal();
+  Future<int?> fetchDailyGoal() => _datasource.fetchDailyGoal();
 }

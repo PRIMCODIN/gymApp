@@ -11,10 +11,11 @@ import '../../data/profile_failure.dart';
 import '../state/profile_providers.dart';
 
 /// Abre el editor del objetivo de kcal en un diálogo. [current] prerrellena el
-/// campo con el valor actual.
+/// campo con el valor actual, o lo deja vacío si el objetivo aún no está fijado
+/// (`null`).
 Future<void> showEditGoalDialog(
   BuildContext context, {
-  required int current,
+  required int? current,
 }) {
   return showDialog<void>(
     context: context,
@@ -29,7 +30,7 @@ Future<void> showEditGoalDialog(
 class EditGoalDialog extends ConsumerStatefulWidget {
   const EditGoalDialog({super.key, required this.current});
 
-  final int current;
+  final int? current;
 
   @override
   ConsumerState<EditGoalDialog> createState() => _EditGoalDialogState();
@@ -37,7 +38,7 @@ class EditGoalDialog extends ConsumerStatefulWidget {
 
 class _EditGoalDialogState extends ConsumerState<EditGoalDialog> {
   late final TextEditingController _controller =
-      TextEditingController(text: widget.current.toString());
+      TextEditingController(text: widget.current?.toString() ?? '');
   bool _isSaving = false;
 
   @override

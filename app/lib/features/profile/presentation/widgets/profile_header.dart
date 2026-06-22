@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_palette.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/utils/display_name.dart';
 
 /// Cabecera del perfil: avatar con iniciales, nombre + email y badge de plan.
 ///
@@ -24,9 +25,7 @@ class ProfileHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = context.palette;
     final textTheme = Theme.of(context).textTheme;
-    final displayName = (name != null && name!.trim().isNotEmpty)
-        ? name!.trim()
-        : 'Sin nombre';
+    final displayName = resolveDisplayName(name);
 
     return Row(
       children: [

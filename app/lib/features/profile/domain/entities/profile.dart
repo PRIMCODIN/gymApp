@@ -22,8 +22,9 @@ class Profile {
   /// Nombre mostrado (`profiles.nombre`). Nullable; solo lectura en esta pantalla.
   final String? name;
 
-  /// Objetivo de kcal diario (`objetivo_kcal_diario`). Editable. Default 2000.
-  final int kcalGoal;
+  /// Objetivo de kcal diario (`objetivo_kcal_diario`). Editable. `null` si el
+  /// usuario aún no lo ha fijado (no se inventa un default).
+  final int? kcalGoal;
 
   /// Plan del usuario (`plan`): `'free'` | `'pro'`. Read-only (lo protege el
   /// trigger `lock_plan`); nunca se escribe desde el cliente.

@@ -10,10 +10,10 @@ class CalorieGoalSupabaseDataSource {
 
   final SupabaseClient _client;
 
-  /// Default cuando el perfil aún no tiene objetivo (coincide con el de la BD).
-  static const int _defaultGoal = 2000;
-
-  Future<int> fetchDailyGoal() async {
+  /// Objetivo de kcal del usuario, o `null` si aún no lo ha fijado (la columna
+  /// nace NULL tras la migración 005). NO se colapsa a un default: distinguir
+  /// "sin fijar" de un valor elegido es justo lo que necesita la UI.
+  Future<int?> fetchDailyGoal() async {
     final userId = _client.auth.currentUser?.id;
     if (userId == null) {
       throw const NutritionFailure(
@@ -31,7 +31,7 @@ class CalorieGoalSupabaseDataSource {
       final value = row?['objetivo_kcal_diario'];
       if (value is int) return value;
       if (value is num) return value.round();
-      return _defaultGoal;
+      return null;
     } catch (error) {
       throw mapNutritionError(error);
     }
