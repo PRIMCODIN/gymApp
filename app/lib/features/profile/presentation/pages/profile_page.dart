@@ -11,6 +11,7 @@ import '../widgets/edit_goal_dialog.dart';
 import '../widgets/edit_personal_data_form.dart';
 import '../widgets/personal_data_section.dart';
 import '../widgets/profile_header.dart';
+import '../widgets/training_stats_section.dart';
 
 /// Pantalla de Perfil: identidad mínima, objetivo de kcal editable, datos
 /// antropométricos (informativos y editables a mano en free) y cierre de sesión.
@@ -78,6 +79,8 @@ class _ProfileContent extends ConsumerWidget {
             onEdit: () =>
                 showEditGoalDialog(context, current: profile.kcalGoal),
           ),
+          const SizedBox(height: AppSpacing.l),
+          const TrainingStatsSection(),
           const SizedBox(height: AppSpacing.l),
           PersonalDataSection(profile: profile),
           const SizedBox(height: AppSpacing.m),
