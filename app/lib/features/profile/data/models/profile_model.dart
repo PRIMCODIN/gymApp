@@ -42,11 +42,13 @@ class ProfileModel extends Profile {
     return {'objetivo_kcal_diario': goal};
   }
 
-  /// Mapa para actualizar los seis datos antropométricos. Un campo `null` se
-  /// envía como `null` para limpiar la columna. **Nunca incluye `plan`** (lo
-  /// revertiría el trigger `lock_plan`). `fecha_nacimiento` va como `YYYY-MM-DD`.
+  /// Mapa para actualizar los datos editables del perfil. `nombre` es obligatorio
+  /// (ya viene *trimmeado* y no vacío desde la UI); el resto, un `null` se envía
+  /// como `null` para limpiar la columna. **Nunca incluye `plan`** (lo revertiría
+  /// el trigger `lock_plan`). `fecha_nacimiento` va como `YYYY-MM-DD`.
   static Map<String, dynamic> personalDataUpdate(PersonalData data) {
     return {
+      'nombre': data.name,
       'sexo': data.sex,
       'fecha_nacimiento': _formatDate(data.birthDate),
       'altura_cm': data.heightCm,

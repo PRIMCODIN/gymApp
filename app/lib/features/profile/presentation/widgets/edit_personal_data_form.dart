@@ -24,11 +24,13 @@ Future<void> showEditPersonalDataForm(
   );
 }
 
-/// Formulario único con los seis datos antropométricos. Todos opcionales: se
-/// puede guardar dejando cualquiera vacío (→ null, limpia la columna). Valida en
-/// cliente los rangos (altura 80–260, peso 25–400) antes de enviar, para dar
-/// feedback antes de que el CHECK de BD rechace. Al guardar, llama al caso de uso
-/// e invalida [profileProvider]. Errores → SnackBar vía [ProfileFailure].
+/// Formulario único de edición del perfil. El nombre es obligatorio; el resto de
+/// campos son opcionales (guardar vacío → null, limpia la columna). La validación
+/// (nombre obligatorio, altura 80–260, peso 25–400) vive en los `validator` de un
+/// `Form` y se muestra como `errorText` bajo cada campo; el guardado llama a
+/// `validate()` y aborta si falla. Al guardar con éxito, llama al caso de uso e
+/// invalida [profileProvider]. Los errores de guardado → SnackBar vía
+/// [ProfileFailure].
 class EditPersonalDataForm extends ConsumerStatefulWidget {
   const EditPersonalDataForm({super.key, required this.profile});
 
@@ -40,6 +42,12 @@ class EditPersonalDataForm extends ConsumerStatefulWidget {
 }
 
 class _EditPersonalDataFormState extends ConsumerState<EditPersonalDataForm> {
+  final _formKey = GlobalKey<FormState>();
+
+  // Nombre: se abre vacío si la fila actual no tiene nombre (null).
+  late final TextEditingController _nameController = TextEditingController(
+    text: widget.profile.name ?? '',
+  );
   late final TextEditingController _heightController = TextEditingController(
     text: widget.profile.heightCm?.toString() ?? '',
   );
@@ -55,9 +63,41 @@ class _EditPersonalDataFormState extends ConsumerState<EditPersonalDataForm> {
 
   @override
   void dispose() {
+    _nameController.dispose();
     _heightController.dispose();
     _weightController.dispose();
     super.dispose();
+  }
+
+  /// Valida el nombre: obligatorio (no vacío tras *trim*).
+  String? _validateName(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'El nombre es obligatorio';
+    }
+    return null;
+  }
+
+  /// Valida la altura: opcional, pero si hay texto debe ser un entero en 80–260.
+  String? _validateHeight(String? value) {
+    final text = value?.trim() ?? '';
+    if (text.isEmpty) return null;
+    final height = int.tryParse(text);
+    if (height == null || height < 80 || height > 260) {
+      return 'La altura debe estar entre 80 y 260 cm.';
+    }
+    return null;
+  }
+
+  /// Valida el peso: opcional, pero si hay texto debe ser un decimal en 25–400
+  /// (tolera coma decimal).
+  String? _validateWeight(String? value) {
+    final text = value?.trim().replaceAll(',', '.') ?? '';
+    if (text.isEmpty) return null;
+    final weight = double.tryParse(text);
+    if (weight == null || weight < 25 || weight > 400) {
+      return 'El peso debe estar entre 25 y 400 kg.';
+    }
+    return null;
   }
 
   /// Formatea el peso sin decimales superfluos (72.0 → "72", 72.5 → "72.5").
@@ -79,37 +119,29 @@ class _EditPersonalDataFormState extends ConsumerState<EditPersonalDataForm> {
       helpText: 'Fecha de nacimiento',
     );
     if (picked != null) {
-      setState(() => _birthDate = DateTime(picked.year, picked.month, picked.day));
+      setState(
+        () => _birthDate = DateTime(picked.year, picked.month, picked.day),
+      );
     }
   }
 
   Future<void> _onSave() async {
-    // Altura: opcional, pero si hay texto debe ser entero válido en rango.
-    final heightText = _heightController.text.trim();
-    int? heightCm;
-    if (heightText.isNotEmpty) {
-      heightCm = int.tryParse(heightText);
-      if (heightCm == null || heightCm < 80 || heightCm > 260) {
-        _showSnackBar('La altura debe estar entre 80 y 260 cm.');
-        return;
-      }
-    }
+    // Valida nombre (obligatorio) y rangos de altura/peso vía los validator del
+    // Form; los errores aparecen como errorText bajo cada campo.
+    if (!(_formKey.currentState?.validate() ?? false)) return;
 
-    // Peso: opcional, pero si hay texto debe ser decimal válido en rango.
+    // Tras validar, el texto (no vacío) ya es parseable y está en rango.
+    final heightText = _heightController.text.trim();
+    final heightCm = heightText.isEmpty ? null : int.parse(heightText);
+
     final weightText = _weightController.text.trim().replaceAll(',', '.');
-    double? weightKg;
-    if (weightText.isNotEmpty) {
-      weightKg = double.tryParse(weightText);
-      if (weightKg == null || weightKg < 25 || weightKg > 400) {
-        _showSnackBar('El peso debe estar entre 25 y 400 kg.');
-        return;
-      }
-    }
+    final weightKg = weightText.isEmpty ? null : double.parse(weightText);
 
     FocusScope.of(context).unfocus();
     setState(() => _isSaving = true);
     try {
       final data = PersonalData(
+        name: _nameController.text.trim(),
         sex: _sex,
         birthDate: _birthDate,
         heightCm: heightCm,
@@ -159,101 +191,120 @@ class _EditPersonalDataFormState extends ConsumerState<EditPersonalDataForm> {
         child: AppCard(
           padding: const EdgeInsets.all(AppSpacing.l),
           child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text('Editar mis datos', style: textTheme.labelLarge),
-                    IconButton(
-                      onPressed:
-                          _isSaving ? null : () => Navigator.of(context).pop(),
-                      icon: Icon(
-                        Icons.close,
-                        color: context.palette.textSecondary,
+            child: Form(
+              key: _formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('Editar mis datos', style: textTheme.labelLarge),
+                      IconButton(
+                        onPressed: _isSaving
+                            ? null
+                            : () => Navigator.of(context).pop(),
+                        icon: Icon(
+                          Icons.close,
+                          color: context.palette.textSecondary,
+                        ),
+                        tooltip: 'Cerrar',
                       ),
-                      tooltip: 'Cerrar',
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.l),
+                  // --- Nombre (obligatorio) ---
+                  Text('NOMBRE', style: textTheme.labelSmall),
+                  const SizedBox(height: AppSpacing.s),
+                  AppTextField(
+                    controller: _nameController,
+                    label: 'Ej. Víctor',
+                    prefixIcon: Icons.person_outline,
+                    enabled: !_isSaving,
+                    textInputAction: TextInputAction.next,
+                    validator: _validateName,
+                  ),
+                  const SizedBox(height: AppSpacing.l),
+                  // --- Sexo ---
+                  Text('SEXO', style: textTheme.labelSmall),
+                  const SizedBox(height: AppSpacing.s),
+                  _ChipSelector(
+                    values: kSexes,
+                    labelOf: sexLabel,
+                    selected: _sex,
+                    enabled: !_isSaving,
+                    onSelected: (value) => setState(() => _sex = value),
+                  ),
+                  const SizedBox(height: AppSpacing.l),
+                  // --- Fecha de nacimiento ---
+                  Text('FECHA DE NACIMIENTO', style: textTheme.labelSmall),
+                  const SizedBox(height: AppSpacing.s),
+                  _BirthDateField(
+                    date: _birthDate,
+                    enabled: !_isSaving,
+                    onTap: _pickBirthDate,
+                    onClear: () => setState(() => _birthDate = null),
+                  ),
+                  const SizedBox(height: AppSpacing.l),
+                  // --- Altura ---
+                  Text('ALTURA (CM)', style: textTheme.labelSmall),
+                  const SizedBox(height: AppSpacing.s),
+                  AppTextField(
+                    controller: _heightController,
+                    label: 'Ej. 175',
+                    prefixIcon: Icons.height,
+                    enabled: !_isSaving,
+                    keyboardType: TextInputType.number,
+                    autocorrect: false,
+                    validator: _validateHeight,
+                  ),
+                  const SizedBox(height: AppSpacing.l),
+                  // --- Peso ---
+                  Text('PESO (KG)', style: textTheme.labelSmall),
+                  const SizedBox(height: AppSpacing.s),
+                  AppTextField(
+                    controller: _weightController,
+                    label: 'Ej. 72.5',
+                    prefixIcon: Icons.monitor_weight_outlined,
+                    enabled: !_isSaving,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
                     ),
-                  ],
-                ),
-                const SizedBox(height: AppSpacing.l),
-                // --- Sexo ---
-                Text('SEXO', style: textTheme.labelSmall),
-                const SizedBox(height: AppSpacing.s),
-                _ChipSelector(
-                  values: kSexes,
-                  labelOf: sexLabel,
-                  selected: _sex,
-                  enabled: !_isSaving,
-                  onSelected: (value) => setState(() => _sex = value),
-                ),
-                const SizedBox(height: AppSpacing.l),
-                // --- Fecha de nacimiento ---
-                Text('FECHA DE NACIMIENTO', style: textTheme.labelSmall),
-                const SizedBox(height: AppSpacing.s),
-                _BirthDateField(
-                  date: _birthDate,
-                  enabled: !_isSaving,
-                  onTap: _pickBirthDate,
-                  onClear: () => setState(() => _birthDate = null),
-                ),
-                const SizedBox(height: AppSpacing.l),
-                // --- Altura ---
-                Text('ALTURA (CM)', style: textTheme.labelSmall),
-                const SizedBox(height: AppSpacing.s),
-                AppTextField(
-                  controller: _heightController,
-                  label: 'Ej. 175',
-                  prefixIcon: Icons.height,
-                  enabled: !_isSaving,
-                  keyboardType: TextInputType.number,
-                  autocorrect: false,
-                ),
-                const SizedBox(height: AppSpacing.l),
-                // --- Peso ---
-                Text('PESO (KG)', style: textTheme.labelSmall),
-                const SizedBox(height: AppSpacing.s),
-                AppTextField(
-                  controller: _weightController,
-                  label: 'Ej. 72.5',
-                  prefixIcon: Icons.monitor_weight_outlined,
-                  enabled: !_isSaving,
-                  keyboardType:
-                      const TextInputType.numberWithOptions(decimal: true),
-                  autocorrect: false,
-                ),
-                const SizedBox(height: AppSpacing.l),
-                // --- Nivel de actividad ---
-                Text('NIVEL DE ACTIVIDAD', style: textTheme.labelSmall),
-                const SizedBox(height: AppSpacing.s),
-                _ChipSelector(
-                  values: kActivityLevels,
-                  labelOf: activityLevelLabel,
-                  selected: _activityLevel,
-                  enabled: !_isSaving,
-                  onSelected: (value) =>
-                      setState(() => _activityLevel = value),
-                ),
-                const SizedBox(height: AppSpacing.l),
-                // --- Objetivo ---
-                Text('OBJETIVO', style: textTheme.labelSmall),
-                const SizedBox(height: AppSpacing.s),
-                _ChipSelector(
-                  values: kGoals,
-                  labelOf: goalLabel,
-                  selected: _goal,
-                  enabled: !_isSaving,
-                  onSelected: (value) => setState(() => _goal = value),
-                ),
-                const SizedBox(height: AppSpacing.l),
-                AppButton(
-                  label: 'Guardar',
-                  isLoading: _isSaving,
-                  onPressed: _onSave,
-                ),
-              ],
+                    autocorrect: false,
+                    validator: _validateWeight,
+                  ),
+                  const SizedBox(height: AppSpacing.l),
+                  // --- Nivel de actividad ---
+                  Text('NIVEL DE ACTIVIDAD', style: textTheme.labelSmall),
+                  const SizedBox(height: AppSpacing.s),
+                  _ChipSelector(
+                    values: kActivityLevels,
+                    labelOf: activityLevelLabel,
+                    selected: _activityLevel,
+                    enabled: !_isSaving,
+                    onSelected: (value) =>
+                        setState(() => _activityLevel = value),
+                  ),
+                  const SizedBox(height: AppSpacing.l),
+                  // --- Objetivo ---
+                  Text('OBJETIVO', style: textTheme.labelSmall),
+                  const SizedBox(height: AppSpacing.s),
+                  _ChipSelector(
+                    values: kGoals,
+                    labelOf: goalLabel,
+                    selected: _goal,
+                    enabled: !_isSaving,
+                    onSelected: (value) => setState(() => _goal = value),
+                  ),
+                  const SizedBox(height: AppSpacing.l),
+                  AppButton(
+                    label: 'Guardar',
+                    isLoading: _isSaving,
+                    onPressed: _onSave,
+                  ),
+                ],
+              ),
             ),
           ),
         ),
